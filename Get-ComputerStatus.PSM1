@@ -27,15 +27,17 @@ function Get-ComputerStatus {
         [CmdletBinding ()]
         param (
             [Parameter(Mandatory=$True)]
-            [String[]] $ComputerName,
-            [String]$ErrorLog = 'C:\Error.log',
+            [String[]] $ComputerName, #Allows multiple computer names
+            [String]$ErrorLog = 'C:\Error.log', #Allows error logging
             [Switch]$LogErrors
         )
-        begin {}
+        begin {
+        Write-Verbose "Beginning Process Block"
+        }
             Process{
-                   foreach ($Computer in $ComputerName) {
+                   foreach ($Computer in $ComputerName) { #Runs command on each computer input
 
-        Try{
+        Try{ #Catch connection errors and outputs message onto screen if there is an error
             $EverythingOK = $True
                     New-PSSession -ComputerName $Computer -ErrorAction Stop | Out-Null
         }Catch{
@@ -47,12 +49,13 @@ function Get-ComputerStatus {
             }
         }
                 if ($EverythingOK){
-                    $PS1 = Get-PSSession
+                    $PS1 = Get-PSSession #Uses sessions
+        Write-Verbose "Connected to $Computer" #Provides details on what the command is doing
 Invoke-Command -Session $PS1 -ScriptBlock{
     #Step 1: IP Address for a remote system and whether the system uses DHCP (Two properties)
 
                 $IP=Get-CimInstance Win32_NetworkAdapterConfiguration `
-                                                    -ErrorAction Stop
+                        | Where-Object -Property Description -like *Gigabit*
 
     #Step 2: Acquire DNS Client Server address used by remote system (One Property)
     
@@ -99,9 +102,13 @@ Invoke-Command -Session $PS1 -ScriptBlock{
             Write-Output $Obj
                                 } | Select-Object -Property * -ExcludeProperty PSComputerName,RunSpaceID
 Remove-PSSession $PS1
-                                
+    
+    Write-Verbose "Disconnected from $Computer" #Provides details on what the command is doing
+    Write-Verbose "Succesfully Completed Process on $Computer"
                 }
             }
         }
-        end {}
+        end {
+        Write-Verbose "Process Completed"
+        }
     }
