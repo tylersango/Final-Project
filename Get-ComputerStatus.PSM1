@@ -12,6 +12,8 @@ function Get-ComputerStatus {
     .Parameter ComputerName <String[]>
         Runs this command on the specified computers. This parameter is mandatory and you must enter the desired computer names
         you wish to query.
+    .Parameter LogErrors
+        Activates the error logging built into the function. The default log file is "C:\Error.log"
     .Example
         Get-ComputerStatus -ComputerName LocalHost
 
@@ -25,19 +27,33 @@ function Get-ComputerStatus {
         [CmdletBinding ()]
         param (
             [Parameter(Mandatory=$True)]
-            [String[]] $ComputerName
+            [String[]] $ComputerName,
+            [String]$ErrorLog = 'C:\Error.log',
+            [Switch]$LogErrors
         )
         begin {}
             Process{
                    foreach ($Computer in $ComputerName) {
-    #Using Sessions: Step 4
-                    New-PSSession -ComputerName $Computer | Out-Null
+
+        Try{
+            $EverythingOK = $True
+                    New-PSSession -ComputerName $Computer -ErrorAction Stop | Out-Null
+        }Catch{
+            $EverythingOK = $False
+                Write-Error "An error has occured: Check for correct computer name and power status of remote computer."
+            if ($LogErrors) {
+                Write-Verbose "Creating an Error Log in $Errorlog"
+                "An error has occured: Check for correct computer name and power status of remote computer." | out-file $ErrorLog -Append
+            }
+        }
+                if ($EverythingOK){
                     $PS1 = Get-PSSession
 Invoke-Command -Session $PS1 -ScriptBlock{
     #Step 1: IP Address for a remote system and whether the system uses DHCP (Two properties)
-    
-                $IP=Get-CimInstance Win32_NetworkAdapterConfiguration
-    
+
+                $IP=Get-CimInstance Win32_NetworkAdapterConfiguration `
+                                                    -ErrorAction Stop
+
     #Step 2: Acquire DNS Client Server address used by remote system (One Property)
     
                 $DNS=Get-DnsClientServerAddress -InterfaceAlias Ethernet0
@@ -84,7 +100,8 @@ Invoke-Command -Session $PS1 -ScriptBlock{
                                 } | Select-Object -Property * -ExcludeProperty PSComputerName,RunSpaceID
 Remove-PSSession $PS1
                                 
-                }#For Each
-            }#Process
+                }
+            }
+        }
         end {}
     }
