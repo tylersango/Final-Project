@@ -2,6 +2,25 @@ function Get-ComputerStatus {
     #Tyler Sango
     #May 1st 2020
     #Final Project - Get remote computer status
+    
+    <#
+    .Synopsis
+        Gets a remote computers operating system, network, and hardware info.
+    .Description
+        The Get-ComputerStatus cmdlet gets objects from one or many local and remote computers. These objects include network
+        information, operating system information, and hardware specifications.
+    .Parameter ComputerName <String[]>
+        Runs this command on the specified computers. This parameter is mandatory and you must enter the desired computer names
+        you wish to query.
+    .Example
+        Get-ComputerStatus -ComputerName LocalHost
+
+        This command gets the default output of the command from the localhost.
+    .Example
+        Get-ComputerStatus -ComputerName Server1 | Select-Object -Property RemoteOSBuildNumber
+
+        This command queries a computer named "Server1" and provides only the RemoteOSBuildNumber property.
+    #>
 
         [CmdletBinding ()]
         param (
@@ -12,7 +31,7 @@ function Get-ComputerStatus {
             Process{
                    foreach ($Computer in $ComputerName) {
     #Using Sessions: Step 4
-                    New-PSSession -ComputerName $Computer
+                    New-PSSession -ComputerName $Computer | Out-Null
                     $PS1 = Get-PSSession
 Invoke-Command -Session $PS1 -ScriptBlock{
     #Step 1: IP Address for a remote system and whether the system uses DHCP (Two properties)
